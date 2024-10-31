@@ -2,11 +2,15 @@ import { httpRequest, httpResponse, Controller, EmailValidator } from '../protoc
 import { InvalidParamError, MissimParamError } from '../errors'
 import { badRequest, serverError } from '../helpers/http-helper'
 import { DefaultDeserializer } from 'v8'
+import { AddAccount } from '../../domain/usecases/add-account'
 
 export class SignUpController implements Controller {
     private readonly emailValidator: EmailValidator
-    constructor(emailValidator: EmailValidator) {
+    private readonly addAccount: AddAccount
+
+    constructor(emailValidator: EmailValidator, addAccount: AddAccount) {
         this.emailValidator = emailValidator
+        this.addAccount = addAccount
     }
 
     handle(httpRequest: httpRequest): httpResponse {
@@ -17,7 +21,7 @@ export class SignUpController implements Controller {
                     return badRequest(new MissimParamError(field))
                 }
             }
-            const { email, password, passwordConfirmation } = httpRequest.body
+            const { name, email, password, passwordConfirmation } = httpRequest.body
             if (password !== passwordConfirmation) {
                 return badRequest(new InvalidParamError('passwordConfirmation'))
             }
@@ -25,6 +29,11 @@ export class SignUpController implements Controller {
             if (!isValid) {
                 return badRequest(new InvalidParamError('email'))
             }
+            this.addAccount.add({
+                name,
+                email,
+                password
+            })
         } catch (error) {
             return serverError()
         }
